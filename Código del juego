@@ -1,1 +1,145 @@
-achu
+#include <iostream>
+#include <random>
+#include <algorithm>
+using namespace std;
+
+struct Unidad {
+    int hpActual;
+    int hpMaximo;
+    int poderAtaque;
+    int poderCura;
+    string nombreUnidad;
+    mt19937 rng;
+    uniform_real_distribution<> dist;
+
+    Unidad(int maxHp, int ataque, int cura, string nombre)
+        : hpMaximo(maxHp), hpActual(maxHp), poderAtaque(ataque), 
+          poderCura(cura), nombreUnidad(nombre), dist(0.75, 1.25) {
+        random_device rd;
+        rng.seed(rd());
+    }
+
+    bool estaMuerto() const {
+        return hpActual <= 0;
+    }
+
+    void Atacar(Unidad& unidadAtacada) {
+        int danoAleatorio=static_cast<int>(poderAtaque * dist(rng));
+        unidadAtacada.hpActual-=danoAleatorio;
+        cout<<nombreUnidad<< " ataca a "<<unidadAtacada.nombreUnidad 
+             << " y causa "<<danoAleatorio<<" de daño!"<<endl;
+
+        if(unidadAtacada.estaMuerto())
+            cout<<unidadAtacada.nombreUnidad<< " ha sido derrotado!" << endl;
+    }
+
+    void Curar() {
+        int cantidadCurada=static_cast<int>(dist(rng) * poderCura);
+        hpActual=min(hpActual+cantidadCurada, hpMaximo);
+        cout<<nombreUnidad<< " se cura "<<cantidadCurada<<" puntos de vida."<<endl;
+    }
+};
+    // Datos del jugador
+struct Jugador {
+    string nombre;
+    int puntaje;
+};
+
+vector<Jugador> jugadores;
+
+void agregarJugador(const string& nombre, int puntaje) {
+    jugadores.push_back({nombre, puntaje});
+}
+
+void mostrarPuntajes() {
+    sort(jugadores.begin(), jugadores.end(), [](const Jugador& a, const Jugador& b) {
+        return a.puntaje > b.puntaje;
+    });
+
+    cout << "\nPuntajes:\n";
+    for(const auto& jugador : jugadores) {
+        cout<<jugador.nombre<<": "<<jugador.puntaje<<" puntos\n";
+    }
+    cout<<endl;
+}
+    // Opciones de juego
+void iniciarJuego() {
+    string nombreJugador;
+    cout<<"\nIngrese su nombre: ";
+    cin>>nombreJugador;
+
+    Unidad jugador(100, 20, 13, nombreJugador);
+    Unidad enemigo(85, 30, 7, "Mago Enemigo");  // Aumentado el poder de ataque del enemigo
+
+    while(!jugador.estaMuerto() && !enemigo.estaMuerto()) {
+        cout << "\n"<<jugador.nombreUnidad<<" HP = " <<jugador.hpActual 
+             << ". "<<enemigo.nombreUnidad<<" HP = " <<enemigo.hpActual<< "\n"<<endl;
+
+        cout<<"Turno del Jugador! ¿Qué harás? Escribe 'a' para atacar o cualquier otra tecla para curarte." << endl;
+        string eleccion;
+        cin>>eleccion;
+
+        if(eleccion == "a")
+            jugador.Atacar(enemigo);
+        else
+            jugador.Curar();
+
+        if(jugador.estaMuerto() || enemigo.estaMuerto()) break;
+
+        cout<<"\n" << jugador.nombreUnidad<< " HP = "<<jugador.hpActual 
+             << ". "<<enemigo.nombreUnidad<< " HP = "<<enemigo.hpActual<< "\n"<<endl;
+
+        cout<< "Turno del Enemigo!" << endl;
+
+        int accionAleatoria = rand() % 2;
+        if(accionAleatoria == 0)
+            enemigo.Atacar(jugador);
+        else
+            enemigo.Curar();
+    }
+
+    int puntajeFinal = jugador.hpActual > 0 ? jugador.hpActual : 0;
+    agregarJugador(jugador.nombreUnidad, puntajeFinal);
+    cout << "\nJuego terminado! Tu puntaje es: " << puntajeFinal << endl;
+}
+    //Menu
+int main() {
+    int opcion;
+
+    do {
+        cout<< "\nMenu del Juego:\n";
+        cout<< "1. Jugar\n";
+        cout<< "2. Mostrar Puntajes\n";
+        cout<< "3. Créditos\n";
+        cout<< "4. Salir\n";
+        cout<< "Seleccione una opcion: ";
+
+        // Correccion de bug
+        while (!(cin >> opcion)) {
+            cin.clear(); 
+            cin.ignore(numeric_limits<streamsize>::max(), '\n'); // Limpiar el buffer
+            cout << "Opción no válida, por favor intente de nuevo: ";
+        }
+
+        switch (opcion) {
+            case 1:
+                iniciarJuego();
+                break;
+            case 2:
+                mostrarPuntajes();
+                break;
+            case 3:
+                cout << "\nJuego desarrollado por:\n";
+                cout << " - Juan Asimbaya\n";
+                cout << " - Joel Velastegui\n";
+                break;
+            case 4:
+                cout << "Saliste del juego.\n";
+                break;
+            default:
+                cout << "Opción no válida, por favor intente de nuevo.\n";
+        }
+    } while (opcion != 4);
+
+    return 0;
+}
